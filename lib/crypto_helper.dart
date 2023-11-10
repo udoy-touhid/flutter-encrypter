@@ -5,12 +5,17 @@ import 'package:encrypt/encrypt.dart' as encrypt_handle;
 
 class CryptoHelper {
   //instead of plain text convert key,iv to base64 and use .fromBase64 for better security
-  static final _key = encrypt_handle.Key.fromUtf8('amaderlab1234567amaderlab1234567');
-  static final _iv = encrypt_handle.IV.fromUtf8('amaderlab1234568');
-  static final _encrypter =
-      encrypt_handle.Encrypter(encrypt_handle.AES(_key, mode: encrypt_handle.AESMode.cbc));
 
-  Future<void> encrypt(String inputPath, String outputPath) async {
+  Future<void> encrypt(
+      {required String inputPath,
+      required String outputPath,
+      required String key,
+      required String iv}) async {
+    final encryptionKey = encrypt_handle.Key.fromUtf8(key);
+    final encryptionIv = encrypt_handle.IV.fromUtf8(iv);
+    final encrypter = encrypt_handle.Encrypter(
+        encrypt_handle.AES(encryptionKey, mode: encrypt_handle.AESMode.cbc));
+
     File inputFile = File(inputPath);
     File outputFile = File(outputPath);
 
@@ -30,14 +35,23 @@ class CryptoHelper {
 
     log('Start encrypting file');
 
-    final encryptedData = _encrypter.encryptBytes(fileContents, iv: _iv);
+    final encryptedData = encrypter.encryptBytes(fileContents, iv: encryptionIv);
 
     log('File Successfully Encrypted!');
 
     await outputFile.writeAsBytes(encryptedData.bytes);
   }
 
-  Future<void> decrypt(String inputPath, String outputPath) async {
+  Future<void> decrypt(
+      {required String inputPath,
+      required String outputPath,
+      required String key,
+      required String iv}) async {
+    final encryptionKey = encrypt_handle.Key.fromUtf8(key);
+    final encryptionIv = encrypt_handle.IV.fromUtf8(iv);
+    final encrypter = encrypt_handle.Encrypter(
+        encrypt_handle.AES(encryptionKey, mode: encrypt_handle.AESMode.cbc));
+
     File inputFile = File(inputPath);
     File outputFile = File(outputPath);
 
@@ -58,7 +72,7 @@ class CryptoHelper {
 
     log('Start decrypting file');
 
-    final decrypted = _encrypter.decryptBytes(encrypt_handle.Encrypted(fileContents), iv: _iv);
+    final decrypted = encrypter.decryptBytes(encrypt_handle.Encrypted(fileContents), iv: encryptionIv);
 
     log('File Successfully Decrypted!');
 
