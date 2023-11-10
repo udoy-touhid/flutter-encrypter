@@ -1,5 +1,6 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'base_button.dart';
@@ -16,6 +17,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      builder: EasyLoading.init(),
       title: 'Encrypter',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
@@ -39,17 +41,14 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   FilePickerResult? selectedFile;
+  var keyController = TextEditingController(text: "12345678123456781234567812345678");
+  var ivController = TextEditingController(text: "1234567812345678");
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
       ),
       body: Center(
@@ -58,10 +57,34 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const Text("Please select file to encrypt"),
-            SizedBox(
-              height: 10,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "key",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                SizedBox(
+                    width: 350,
+                    child: TextFormField(
+                      controller: keyController,
+                      maxLength: 32,
+                    )),
+                const Text(
+                  "iv",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                SizedBox(
+                    width: 300,
+                    child: TextFormField(
+                      controller: ivController,
+                      maxLength: 16,
+                    )),
+              ],
             ),
+            SizedBox(height: 40),
+            const Text("Please select file to encrypt/decrypt"),
+            const SizedBox(height: 10),
             BaseButton(
               buttonWidth: 300,
               iconVisible: false,
@@ -71,22 +94,13 @@ class _MyHomePageState extends State<MyHomePage> {
                     await FilePicker.platform.pickFiles(type: FileType.any, withReadStream: true);
                 setState(() {});
                 if (selectedFile != null) {
-                  print(selectedFile!.files.first.extension?.toLowerCase() ?? "");
-                  // if (!acceptableFormats
-                  //     .contains(result!.files.first.extension?.toLowerCase() ?? "")) {
-                  //   EasyLoading.showError("File must be of type ${acceptableFormats.toString()}");
-                  //   print(result!.files.first.name);
-                  //
-                  //   result = null;
-                  // }
+                  print("Selected file ${selectedFile!.files.first.name}");
                 } else {
                   print("cancelled");
                 }
               },
             ),
-            SizedBox(
-              height: 20,
-            ),
+            const SizedBox(height: 20),
             if (selectedFile != null)
               Card(
                 child: Container(
@@ -108,21 +122,43 @@ class _MyHomePageState extends State<MyHomePage> {
                       ],
                     )),
               ),
-            SizedBox(height: 50),
+            const SizedBox(height: 50),
             if (selectedFile != null)
-              BaseButton(
-                onClick: () async {
-                  await widget.cryptoHelper.encrypt(selectedFile!.files.first.path ?? "",
-                      "${(await getDownloadsDirectory())!.path}/myfile.${selectedFile!.files.first.extension}.enc");
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  BaseButton(
+                    onClick: () async {
+                      await widget.cryptoHelper.encrypt(
+                          inputPath: selectedFile!.files.first.path ?? "",
+                          outputPath:
+                              "${(await getDownloadsDirectory())!.path}/${selectedFile!.files.first.name}.enc",
+                          key: keyController.text,
+                          iv: ivController.text);
 
-                  await widget.cryptoHelper.decrypt("${(await getDownloadsDirectory())!.path}/myfile.${selectedFile!.files.first.extension}.enc",
-                      "${(await getDownloadsDirectory())!.path}/decrypted-myfile.${selectedFile!.files.first.extension}");
+                      EasyLoading.showSuccess("Done");
+                    },
+                    iconVisible: false,
+                    buttonLabel: "Encrypt now!",
+                    buttonWidth: 300,
+                  ),
+                  const SizedBox(width: 10),
+                  BaseButton(
+                    onClick: () async {
+                      await widget.cryptoHelper.decrypt(
+                          inputPath: selectedFile!.files.first.path ?? "",
+                          outputPath:
+                              "${(await getDownloadsDirectory())!.path}/${selectedFile!.files.first.name}.decrypted",
+                          key: keyController.text,
+                          iv: ivController.text);
 
-
-                },
-                iconVisible: false,
-                buttonLabel: "Encrypt now!",
-                buttonWidth: 300,
+                      EasyLoading.showSuccess("Done");
+                    },
+                    iconVisible: false,
+                    buttonLabel: "Decrypt now!",
+                    buttonWidth: 300,
+                  ),
+                ],
               )
           ],
         ),
